@@ -77,7 +77,7 @@ This ensures minimal wastage of room capacity.
 
 ## Deployment
 
-Deployed on Vercel. Live URL: [will be updated after deployment]
+Deployed on Vercel. Live URL: https://hostel-room-allocation-flame.vercel.app
 
 ## Browser Support
 
