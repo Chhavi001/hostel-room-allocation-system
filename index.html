@@ -3,110 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hostel Room Allocation System</title>
+    <title>Hostel Room Allocation</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Hostel Room Management</h1>
-            <p class="subtitle">Smart allocation for student accommodation</p>
-            <div class="stats-bar" id="statsBar"></div>
-        </header>
+    <nav>
+        <h1>Hostel Room Allocation</h1>
+        <div id="statsBar" class="stats"></div>
+    </nav>
 
-        <div class="main-content">
-            <div class="left-panel">
-                <section class="card">
-                    <h2>Add New Room</h2>
-                    <form id="addRoomForm">
-                        <div class="form-group">
-                            <label for="roomNo">Room Number</label>
-                            <input type="text" id="roomNo" required placeholder="e.g., 101">
-                        </div>
-                        <div class="form-group">
-                            <label for="capacity">Capacity</label>
-                            <input type="number" id="capacity" min="1" required placeholder="Number of students">
-                        </div>
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="hasAC">
-                                <span>Air Conditioning</span>
-                            </label>
-                        </div>
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="hasWashroom">
-                                <span>Attached Washroom</span>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Add Room</button>
-                    </form>
-                </section>
+    <div class="wrapper">
+        <div class="sidebar">
+            <div class="panel">
+                <h3>Add Room</h3>
+                <form id="addRoomForm">
+                    <label>Room No.</label>
+                    <input type="text" id="roomNo" placeholder="e.g. 101" required>
 
-                <section class="card">
-                    <h2>Search & Allocate</h2>
-                    <form id="allocateForm">
-                        <div class="form-group">
-                            <label for="studentCount">Number of Students</label>
-                            <input type="number" id="studentCount" min="1" required placeholder="Students to allocate">
-                        </div>
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="needsAC">
-                                <span>AC Required</span>
-                            </label>
-                        </div>
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="needsWashroom">
-                                <span>Washroom Required</span>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-secondary">Find Room</button>
-                    </form>
-                    <div id="allocationResult" class="result-box"></div>
-                </section>
+                    <label>Capacity</label>
+                    <input type="number" id="capacity" min="1" placeholder="Max students" required>
 
-                <section class="card">
-                    <h2>Deallocate Room</h2>
-                    <form id="deallocateForm">
-                        <div class="form-group">
-                            <label for="deallocateRoomNo">Room Number</label>
-                            <input type="text" id="deallocateRoomNo" required placeholder="Enter room number to free">
-                        </div>
-                        <button type="submit" class="btn btn-danger">Free Room</button>
-                    </form>
-                    <div id="deallocateResult" class="result-box"></div>
-                </section>
+                    <div class="check-row">
+                        <label><input type="checkbox" id="hasAC"> Has AC</label>
+                        <label><input type="checkbox" id="hasWashroom"> Attached Washroom</label>
+                    </div>
+
+                    <button type="submit" class="btn add-btn">Add Room</button>
+                </form>
             </div>
 
-            <div class="right-panel">
-                <section class="card">
-                    <div class="section-header">
-                        <h2>Available Rooms</h2>
-                        <div class="filter-controls">
-                            <input type="text" id="searchInput" placeholder="Search by room number...">
-                            <select id="filterCapacity">
-                                <option value="">All Capacities</option>
-                                <option value="1">1 Person</option>
-                                <option value="2">2 Person</option>
-                                <option value="3">3 Person</option>
-                                <option value="4">4+ Person</option>
-                            </select>
-                            <select id="filterAC">
-                                <option value="">AC: Any</option>
-                                <option value="yes">AC: Yes</option>
-                                <option value="no">AC: No</option>
-                            </select>
-                            <select id="filterWashroom">
-                                <option value="">Washroom: Any</option>
-                                <option value="yes">Washroom: Yes</option>
-                                <option value="no">Washroom: No</option>
-                            </select>
-                        </div>
+            <div class="panel">
+                <h3>Allocate Room</h3>
+                <form id="allocateForm">
+                    <label>No. of Students</label>
+                    <input type="number" id="studentCount" min="1" placeholder="How many?" required>
+
+                    <div class="check-row">
+                        <label><input type="checkbox" id="needsAC"> Needs AC</label>
+                        <label><input type="checkbox" id="needsWashroom"> Needs Washroom</label>
                     </div>
-                    <div id="roomsList" class="rooms-grid"></div>
-                </section>
+
+                    <button type="submit" class="btn alloc-btn">Find & Allocate</button>
+                </form>
+                <div id="allocationResult" class="msg-box hidden"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Free a Room</h3>
+                <form id="deallocateForm">
+                    <label>Room No.</label>
+                    <input type="text" id="deallocateRoomNo" placeholder="Room to free" required>
+                    <button type="submit" class="btn free-btn">Deallocate</button>
+                </form>
+                <div id="deallocateResult" class="msg-box hidden"></div>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="panel">
+                <div class="top-bar">
+                    <h3>All Rooms</h3>
+                    <div class="filters">
+                        <input type="text" id="searchInput" placeholder="Search room no...">
+                        <select id="filterCapacity">
+                            <option value="">Any capacity</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4+</option>
+                        </select>
+                        <select id="filterAC">
+                            <option value="">AC - Any</option>
+                            <option value="yes">With AC</option>
+                            <option value="no">Without AC</option>
+                        </select>
+                        <select id="filterWashroom">
+                            <option value="">Washroom - Any</option>
+                            <option value="yes">With Washroom</option>
+                            <option value="no">Without Washroom</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="roomsList" class="room-grid"></div>
             </div>
         </div>
     </div>

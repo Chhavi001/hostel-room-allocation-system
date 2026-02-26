@@ -1,281 +1,245 @@
-let rooms = [];
-let allocatedRooms = new Set();
+var rooms = [];
+var allocated = new Set();
 
-function loadRooms() {
-    const savedRooms = localStorage.getItem('hostelRooms');
-    if (savedRooms) {
-        rooms = JSON.parse(savedRooms);
-    }
-
-    const savedAllocated = localStorage.getItem('allocatedRooms');
-    if (savedAllocated) {
-        allocatedRooms = new Set(JSON.parse(savedAllocated));
-    }
+function load() {
+    var data = localStorage.getItem('rooms');
+    if (data) rooms = JSON.parse(data);
+    var alloc = localStorage.getItem('allocated');
+    if (alloc) allocated = new Set(JSON.parse(alloc));
 }
 
-function saveRooms() {
-    localStorage.setItem('hostelRooms', JSON.stringify(rooms));
-    localStorage.setItem('allocatedRooms', JSON.stringify([...allocatedRooms]));
+function save() {
+    localStorage.setItem('rooms', JSON.stringify(rooms));
+    localStorage.setItem('allocated', JSON.stringify(Array.from(allocated)));
 }
 
-function updateStats() {
-    const totalRooms = rooms.length;
-    const allocatedCount = allocatedRooms.size;
-    const freeCount = totalRooms - allocatedCount;
+function refreshStats() {
+    var total = rooms.length;
+    var used = allocated.size;
+    var free = total - used;
+    document.getElementById('statsBar').innerHTML =
+        '<span>Total: ' + total + '</span>' +
+        '<span>Available: ' + free + '</span>' +
+        '<span>Occupied: ' + used + '</span>';
+}
 
-    document.getElementById('statsBar').innerHTML = `
-        <div class="stat-item">Total: ${totalRooms}</div>
-        <div class="stat-item">Free: ${freeCount}</div>
-        <div class="stat-item">Allocated: ${allocatedCount}</div>
-    `;
+function renderRooms(list) {
+    var container = document.getElementById('roomsList');
+    var data = list || rooms;
+
+    if (data.length === 0) {
+        container.innerHTML = '<div class="no-rooms"><p>No rooms to show. Add some using the form.</p></div>';
+        return;
+    }
+
+    var html = '';
+    for (var i = 0; i < data.length; i++) {
+        var r = data[i];
+        var isOccupied = allocated.has(r.roomNo);
+
+        var tags = '';
+        if (r.hasAC) tags += '<span class="tag ac">AC</span>';
+        if (r.hasAttachedWashroom) tags += '<span class="tag wr">Washroom</span>';
+        if (isOccupied) tags += '<span class="tag occ">Occupied</span>';
+
+        html += '<div class="room-card' + (isOccupied ? ' occupied' : '') + '">';
+        html += '<div class="room-top">';
+        html += '<strong>Room ' + r.roomNo + '</strong>';
+        html += '<button class="rm-btn" onclick="removeRoom(\'' + r.roomNo + '\')">&times;</button>';
+        html += '</div>';
+        html += '<div class="room-info">';
+        html += 'Capacity: ' + r.capacity + '<br>';
+        html += 'Status: ' + (isOccupied ? 'Occupied' : 'Available');
+        html += '</div>';
+        html += '<div class="tags">' + tags + '</div>';
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
 }
 
 document.getElementById('addRoomForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    const roomNo = document.getElementById('roomNo').value.trim();
-    const capacity = parseInt(document.getElementById('capacity').value);
-    const hasAC = document.getElementById('hasAC').checked;
-    const hasWashroom = document.getElementById('hasWashroom').checked;
+    var roomNo = document.getElementById('roomNo').value.trim();
+    var cap = parseInt(document.getElementById('capacity').value);
+    var ac = document.getElementById('hasAC').checked;
+    var washroom = document.getElementById('hasWashroom').checked;
 
     if (!roomNo) {
-        showNotification('Please enter a room number', 'error');
+        toast('Enter a room number', false);
+        return;
+    }
+    if (isNaN(cap) || cap < 1) {
+        toast('Capacity should be at least 1', false);
         return;
     }
 
-    if (isNaN(capacity) || capacity < 1) {
-        showNotification('Capacity must be at least 1', 'error');
-        return;
+    for (var i = 0; i < rooms.length; i++) {
+        if (rooms[i].roomNo === roomNo) {
+            toast('Room ' + roomNo + ' already exists', false);
+            return;
+        }
     }
 
-    if (rooms.some(room => room.roomNo === roomNo)) {
-        showNotification('Room ' + roomNo + ' already exists!', 'error');
-        return;
-    }
-
-    var newRoom = {
+    rooms.push({
         roomNo: roomNo,
-        capacity: capacity,
-        hasAC: hasAC,
-        hasAttachedWashroom: hasWashroom
-    };
+        capacity: cap,
+        hasAC: ac,
+        hasAttachedWashroom: washroom
+    });
 
-    rooms.push(newRoom);
-    saveRooms();
-    displayRooms();
-    updateStats();
-
+    save();
+    renderRooms();
+    refreshStats();
     this.reset();
-    showNotification('Room ' + roomNo + ' added successfully!', 'success');
+    toast('Room ' + roomNo + ' added');
 });
 
-function deleteRoom(roomNo) {
-    if (!confirm('Delete room ' + roomNo + '?')) return;
+function removeRoom(no) {
+    if (!confirm('Remove room ' + no + '?')) return;
 
-    rooms = rooms.filter(function(room) {
-        return room.roomNo !== roomNo;
-    });
-    allocatedRooms.delete(roomNo);
-    saveRooms();
-    displayRooms();
-    updateStats();
-    showNotification('Room ' + roomNo + ' deleted', 'success');
-}
-
-function displayRooms(filteredRooms) {
-    var roomsList = document.getElementById('roomsList');
-    var roomsToDisplay = filteredRooms || rooms;
-
-    if (roomsToDisplay.length === 0) {
-        roomsList.innerHTML = '<div class="empty-state"><h3>No rooms found</h3><p>Add rooms using the form on the left</p></div>';
-        return;
+    var updated = [];
+    for (var i = 0; i < rooms.length; i++) {
+        if (rooms[i].roomNo !== no) updated.push(rooms[i]);
     }
-
-    roomsList.innerHTML = '';
-
-    roomsToDisplay.forEach(function(room) {
-        var isAllocated = allocatedRooms.has(room.roomNo);
-        var roomCard = document.createElement('div');
-        roomCard.className = 'room-card' + (isAllocated ? ' allocated' : '');
-
-        var featuresHTML = '';
-        if (room.hasAC) featuresHTML += '<span class="feature-badge ac">AC</span>';
-        if (room.hasAttachedWashroom) featuresHTML += '<span class="feature-badge washroom">Washroom</span>';
-        if (isAllocated) featuresHTML += '<span class="feature-badge allocated">Occupied</span>';
-
-        roomCard.innerHTML = '<div class="room-header"><div class="room-number">Room ' + room.roomNo + '</div>' +
-            '<button class="delete-btn" onclick="deleteRoom(\'' + room.roomNo + '\')" title="Delete room">&#10005;</button></div>' +
-            '<div class="room-details"><div class="room-detail-item">Capacity: ' + room.capacity + ' student' + (room.capacity > 1 ? 's' : '') + '</div>' +
-            '<div class="room-detail-item">Status: ' + (isAllocated ? 'Occupied' : 'Available') + '</div></div>' +
-            '<div class="room-features">' + featuresHTML + '</div>';
-
-        roomsList.appendChild(roomCard);
-    });
+    rooms = updated;
+    allocated.delete(no);
+    save();
+    renderRooms();
+    refreshStats();
+    toast('Room ' + no + ' removed');
 }
 
 document.getElementById('allocateForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    var studentCount = parseInt(document.getElementById('studentCount').value);
-    var needsAC = document.getElementById('needsAC').checked;
-    var needsWashroom = document.getElementById('needsWashroom').checked;
+    var count = parseInt(document.getElementById('studentCount').value);
+    var wantAC = document.getElementById('needsAC').checked;
+    var wantWR = document.getElementById('needsWashroom').checked;
+    var box = document.getElementById('allocationResult');
 
-    if (isNaN(studentCount) || studentCount < 1) {
-        showNotification('Enter a valid number of students', 'error');
+    if (isNaN(count) || count < 1) {
+        toast('Enter valid student count', false);
         return;
     }
 
-    var result = allocateRoom(studentCount, needsAC, needsWashroom);
-    displayAllocationResult(result);
+    var candidates = [];
+    for (var i = 0; i < rooms.length; i++) {
+        var r = rooms[i];
+        if (allocated.has(r.roomNo)) continue;
+        if (r.capacity < count) continue;
+        if (wantAC && !r.hasAC) continue;
+        if (wantWR && !r.hasAttachedWashroom) continue;
+        candidates.push(r);
+    }
+
+    if (candidates.length === 0) {
+        box.className = 'msg-box fail';
+        box.innerHTML = '<b>No room available</b> matching your requirements.';
+        return;
+    }
+
+    candidates.sort(function(a, b) { return a.capacity - b.capacity; });
+    var picked = candidates[0];
+
+    allocated.add(picked.roomNo);
+    save();
+    renderRooms();
+    refreshStats();
+
+    var info = '<b>Allocated Room ' + picked.roomNo + '</b><br>';
+    info += 'Capacity: ' + picked.capacity;
+    if (picked.hasAC) info += ' | AC: Yes';
+    if (picked.hasAttachedWashroom) info += ' | Washroom: Yes';
+    box.className = 'msg-box ok';
+    box.innerHTML = info;
 });
-
-function allocateRoom(students, needsAC, needsWashroom) {
-    var availableRooms = rooms.filter(function(room) {
-        if (allocatedRooms.has(room.roomNo)) return false;
-        if (room.capacity < students) return false;
-        if (needsAC && !room.hasAC) return false;
-        if (needsWashroom && !room.hasAttachedWashroom) return false;
-        return true;
-    });
-
-    if (availableRooms.length === 0) {
-        return { success: false, message: 'No room available matching these requirements' };
-    }
-
-    availableRooms.sort(function(a, b) { return a.capacity - b.capacity; });
-    var best = availableRooms[0];
-
-    allocatedRooms.add(best.roomNo);
-    saveRooms();
-    displayRooms();
-    updateStats();
-
-    return {
-        success: true,
-        room: best,
-        message: 'Room ' + best.roomNo + ' has been allocated!'
-    };
-}
-
-function displayAllocationResult(result) {
-    var resultBox = document.getElementById('allocationResult');
-
-    if (result.success) {
-        resultBox.className = 'result-box success';
-        var html = '<strong>' + result.message + '</strong><br>';
-        html += 'Capacity: ' + result.room.capacity + ' student' + (result.room.capacity > 1 ? 's' : '') + '<br>';
-        if (result.room.hasAC) html += 'AC: Yes<br>';
-        if (result.room.hasAttachedWashroom) html += 'Attached Washroom: Yes';
-        resultBox.innerHTML = html;
-    } else {
-        resultBox.className = 'result-box error';
-        resultBox.innerHTML = '<strong>' + result.message + '</strong>';
-    }
-}
 
 document.getElementById('deallocateForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    var no = document.getElementById('deallocateRoomNo').value.trim();
+    var box = document.getElementById('deallocateResult');
 
-    var roomNo = document.getElementById('deallocateRoomNo').value.trim();
-    var resultBox = document.getElementById('deallocateResult');
-
-    if (!roomNo) {
-        showNotification('Enter a room number', 'error');
+    if (!no) {
+        toast('Enter room number', false);
         return;
     }
 
-    var roomExists = rooms.some(function(r) { return r.roomNo === roomNo; });
-    if (!roomExists) {
-        resultBox.className = 'result-box error';
-        resultBox.innerHTML = '<strong>Room ' + roomNo + ' does not exist</strong>';
+    var found = false;
+    for (var i = 0; i < rooms.length; i++) {
+        if (rooms[i].roomNo === no) { found = true; break; }
+    }
+
+    if (!found) {
+        box.className = 'msg-box fail';
+        box.innerHTML = 'Room ' + no + ' doesn\'t exist.';
         return;
     }
 
-    if (!allocatedRooms.has(roomNo)) {
-        resultBox.className = 'result-box error';
-        resultBox.innerHTML = '<strong>Room ' + roomNo + ' is not currently allocated</strong>';
+    if (!allocated.has(no)) {
+        box.className = 'msg-box fail';
+        box.innerHTML = 'Room ' + no + ' is already free.';
         return;
     }
 
-    allocatedRooms.delete(roomNo);
-    saveRooms();
-    displayRooms();
-    updateStats();
-
-    resultBox.className = 'result-box success';
-    resultBox.innerHTML = '<strong>Room ' + roomNo + ' is now free</strong>';
+    allocated.delete(no);
+    save();
+    renderRooms();
+    refreshStats();
+    box.className = 'msg-box ok';
+    box.innerHTML = 'Room ' + no + ' freed up!';
     document.getElementById('deallocateRoomNo').value = '';
 });
 
-document.getElementById('searchInput').addEventListener('input', function() {
-    filterRooms();
-});
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('filterCapacity').addEventListener('change', applyFilters);
+document.getElementById('filterAC').addEventListener('change', applyFilters);
+document.getElementById('filterWashroom').addEventListener('change', applyFilters);
 
-document.getElementById('filterCapacity').addEventListener('change', function() {
-    filterRooms();
-});
+function applyFilters() {
+    var term = document.getElementById('searchInput').value.toLowerCase();
+    var capVal = document.getElementById('filterCapacity').value;
+    var acVal = document.getElementById('filterAC').value;
+    var wrVal = document.getElementById('filterWashroom').value;
 
-document.getElementById('filterAC').addEventListener('change', function() {
-    filterRooms();
-});
+    var result = [];
+    for (var i = 0; i < rooms.length; i++) {
+        var r = rooms[i];
+        if (term && r.roomNo.toLowerCase().indexOf(term) === -1) continue;
 
-document.getElementById('filterWashroom').addEventListener('change', function() {
-    filterRooms();
-});
-
-function filterRooms() {
-    var searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    var capacityFilter = document.getElementById('filterCapacity').value;
-    var acFilter = document.getElementById('filterAC').value;
-    var washroomFilter = document.getElementById('filterWashroom').value;
-
-    var filtered = rooms;
-
-    if (searchTerm) {
-        filtered = filtered.filter(function(room) {
-            return room.roomNo.toLowerCase().indexOf(searchTerm) !== -1;
-        });
-    }
-
-    if (capacityFilter) {
-        var cap = parseInt(capacityFilter);
-        if (cap >= 4) {
-            filtered = filtered.filter(function(room) { return room.capacity >= 4; });
-        } else {
-            filtered = filtered.filter(function(room) { return room.capacity === cap; });
+        if (capVal) {
+            var c = parseInt(capVal);
+            if (c >= 4) { if (r.capacity < 4) continue; }
+            else { if (r.capacity !== c) continue; }
         }
+
+        if (acVal === 'yes' && !r.hasAC) continue;
+        if (acVal === 'no' && r.hasAC) continue;
+        if (wrVal === 'yes' && !r.hasAttachedWashroom) continue;
+        if (wrVal === 'no' && r.hasAttachedWashroom) continue;
+
+        result.push(r);
     }
 
-    if (acFilter === 'yes') {
-        filtered = filtered.filter(function(room) { return room.hasAC; });
-    } else if (acFilter === 'no') {
-        filtered = filtered.filter(function(room) { return !room.hasAC; });
-    }
-
-    if (washroomFilter === 'yes') {
-        filtered = filtered.filter(function(room) { return room.hasAttachedWashroom; });
-    } else if (washroomFilter === 'no') {
-        filtered = filtered.filter(function(room) { return !room.hasAttachedWashroom; });
-    }
-
-    displayRooms(filtered);
+    renderRooms(result);
 }
 
-function showNotification(message, type) {
-    var notification = document.createElement('div');
-    notification.style.cssText = 'position:fixed;top:20px;right:20px;padding:15px 20px;' +
-        'background:' + (type === 'success' ? '#48bb78' : '#f56565') + ';color:white;' +
-        'border-radius:6px;box-shadow:0 5px 15px rgba(0,0,0,0.3);z-index:1000;' +
-        'animation:slideIn 0.3s ease;font-weight:500;';
-    notification.textContent = message;
-    document.body.appendChild(notification);
+function toast(msg, success) {
+    if (success === undefined) success = true;
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.style.background = success ? '#27ae60' : '#e74c3c';
+    el.textContent = msg;
+    document.body.appendChild(el);
 
+    setTimeout(function() { el.classList.add('show'); }, 10);
     setTimeout(function() {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(function() { notification.remove(); }, 300);
-    }, 2500);
+        el.classList.remove('show');
+        setTimeout(function() { el.remove(); }, 300);
+    }, 2200);
 }
 
-loadRooms();
-displayRooms();
-updateStats();
+load();
+renderRooms();
+refreshStats();
