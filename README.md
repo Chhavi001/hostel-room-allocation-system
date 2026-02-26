@@ -1,84 +1,84 @@
 # Hostel Room Allocation System
 
-A smart web-based application for managing hostel rooms and automatically allocating rooms to students based on their requirements.
+A web application for managing hostel rooms and automatically allocating rooms to students based on capacity and facility requirements.
 
 ## Features
 
-- **Add Rooms**: Add new hostel rooms with details like room number, capacity, AC availability, and washroom attachment
-- **View All Rooms**: Display all available rooms in an organized grid layout
-- **Search & Filter**: Search rooms by room number and filter by capacity
-- **Smart Allocation**: Automatically allocate the smallest suitable room based on student requirements
-- **Persistent Storage**: Room data is saved locally in the browser
+- **Add Rooms** - Create hostel rooms with room number, capacity, AC, and attached washroom options
+- **View All Rooms** - See all rooms in a grid layout with their current status
+- **Search & Filter** - Search by room number, filter by capacity, AC availability, and washroom
+- **Smart Allocation** - Automatically assigns the smallest suitable room that matches all requirements
+- **Deallocate Rooms** - Free up allocated rooms when students leave
+- **Delete Rooms** - Remove rooms from the system
+- **Data Persistence** - All data is saved in browser localStorage
 
-## Technology Stack
+## Tech Stack
 
 - HTML5
 - CSS3
-- JavaScript (Vanilla)
-- LocalStorage for data persistence
+- Vanilla JavaScript
+- LocalStorage
 
-## How to Use
+## How It Works
 
 ### Adding a Room
 
-1. Enter the room number
-2. Specify the capacity (number of students)
-3. Check AC if the room has air conditioning
-4. Check Washroom if the room has an attached washroom
-5. Click "Add Room"
+1. Enter room number (must be unique)
+2. Set the capacity
+3. Toggle AC and attached washroom as needed
+4. Click "Add Room"
 
 ### Allocating a Room
 
-1. Enter the number of students
-2. Select whether AC is required
-3. Select whether an attached washroom is required
+1. Enter how many students need a room
+2. Check if AC is required
+3. Check if attached washroom is required
 4. Click "Find Room"
-5. The system will allocate the smallest available room that meets all requirements
+5. The system picks the smallest available room that fits all criteria
+6. If nothing matches, it shows "No room available"
 
-### Searching Rooms
+### Searching and Filtering
 
-- Use the search box to find rooms by room number
-- Use the capacity dropdown to filter rooms by capacity
+- Type in the search box to find rooms by number
+- Use dropdowns to filter by capacity, AC, or washroom availability
 
-## Allocation Algorithm
+### Deallocating
 
-The system uses a smart allocation algorithm that:
-1. Filters rooms based on requirements (capacity, AC, washroom)
-2. Excludes already allocated rooms
-3. Sorts eligible rooms by capacity
-4. Allocates the smallest suitable room to minimize wastage
+- Enter the room number in the Deallocate section
+- Click "Free Room" to make it available again
 
-## Installation
+## Allocation Logic
 
-No installation required! Just open `index.html` in a modern web browser.
+The algorithm works like this:
+1. Filter out already allocated rooms
+2. Filter out rooms that are too small
+3. If AC is needed, only keep rooms with AC
+4. If washroom is needed, only keep rooms with attached washroom
+5. Sort remaining rooms by capacity (ascending)
+6. Pick the first one (smallest that fits)
 
-## Live Demo
-
-[Live URL will be added after deployment]
+This ensures minimal wastage of room capacity.
 
 ## Project Structure
 
 ```
-├── index.html      # Main HTML file
-├── styles.css      # Styling
-├── app.js          # JavaScript logic
-└── README.md       # Documentation
+├── index.html       # Main page
+├── styles.css       # All styles
+├── app.js           # Application logic
+├── vercel.json      # Deployment config
+└── README.md        # This file
 ```
 
-## Browser Compatibility
+## Running Locally
 
-Works on all modern browsers:
-- Chrome
-- Firefox
-- Safari
-- Edge
+1. Clone the repo
+2. Open `index.html` in any browser
+3. No build step or server needed
 
-## Local Development
+## Deployment
 
-1. Clone the repository
-2. Open `index.html` in your browser
-3. Start using the application
+Deployed on Vercel. Live URL: [will be updated after deployment]
 
-## Data Persistence
+## Browser Support
 
-Room data is stored in the browser's LocalStorage, so your data persists across sessions on the same device and browser.
+Chrome, Firefox, Safari, Edge (all modern browsers)
